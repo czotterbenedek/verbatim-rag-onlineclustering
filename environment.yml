@@ -1,0 +1,25 @@
+name: verbatim-rag-onlineclustering
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - datasets
+  - matplotlib
+  - transformers
+  - plotly
+  - scikit-learn
+  - scipy
+  - tqdm
+  - jupyter
+  - ipykernel
+  - sentence-transformers
+  - accelerate
+  - pyarrow
+  - faiss-cpu
+  - pip
+  - pip:
+      - verbatim-rag
+      - torch

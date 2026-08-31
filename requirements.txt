@@ -1,0 +1,17 @@
+numpy
+pandas
+datasets
+verbatim-rag
+matplotlib
+transformers
+plotly
+scikit-learn
+scipy
+tqdm
+jupyter
+ipykernel
+sentence-transformers
+torch
+accelerate
+pyarrow
+faiss-cpu
