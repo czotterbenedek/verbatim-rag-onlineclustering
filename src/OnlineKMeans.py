@@ -357,6 +357,20 @@ class OnlineKMeans:
         
         return D.argmin(axis=1)
 
+    def predict_top_clusters(self, X, n_clusters):
+        """Return nearest cluster ids and distances for each input vector."""
+        if self.centroids is None:
+            raise RuntimeError("The model must be fitted before prediction.")
+        X = np.asarray(X, dtype=float)
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
+        if self.metric == "cosine":
+            X = self._normalize(X)
+        distances = self._pairwise_dist(X, self.centroids)
+        n_clusters = min(max(1, n_clusters), len(self.centroids))
+        order = np.argsort(distances, axis=1, kind="stable")[:, :n_clusters]
+        return order, np.take_along_axis(distances, order, axis=1)
+
     def get_state(self):
         """Return current clustering state."""
         return {

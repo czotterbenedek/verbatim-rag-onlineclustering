@@ -1,0 +1,52 @@
+data:
+  corpus_source: huggingface
+  corpus_name: KRLabsOrg/acl-anthology-md
+  corpus_config: fulltext
+  corpus_split: train
+  max_documents: 1000
+  local_corpus_dir: ../data/raw/acl-anthology-md
+  chunks_path: ../data/processed/chunks.jsonl
+  evaluation_name: KRLabsOrg/acl-verbatim-spans
+  evaluation_config: canonical
+  evaluation_split: validation
+  include_evaluation_papers: true
+  evaluation_path: ../data/processed/evaluation.jsonl
+chunking:
+  strategy: verbatim_rag
+  min_size: 500
+  max_size: 5000
+embedding:
+  model: sentence-transformers/all-MiniLM-L6-v2
+  batch_size: 32
+  normalize: true
+  path: ../data/embeddings/chunk_embeddings.npy
+  query_path: ../data/embeddings/query_embeddings.npy
+clustering:
+  algorithm: online_kmeans
+  n_clusters: 100
+  metric: cosine
+  batch_size: 128
+  random_state: 42
+  top_clusters: 10
+  dynamic_creation: false
+  max_clusters: 100
+  new_cluster_threshold: null
+  merging: false
+  merge_threshold: null
+  splitting: false
+  split_conductance_threshold: null
+random:
+  random_state: 42
+  candidate_fraction: null
+retrieval:
+  top_k: 10
+experiment:
+  name: acl_validation
+  output_root: ../experiments
+  systems:
+    - baseline
+    - random
+    - offline_kmeans
+    - online_kmeans
+results:
+  directory: ../results/default

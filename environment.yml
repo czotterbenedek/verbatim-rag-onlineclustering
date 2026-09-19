@@ -19,6 +19,7 @@ dependencies:
   - accelerate
   - pyarrow
   - faiss-cpu
+  - pyyaml
   - pip
   - pip:
       - verbatim-rag
