@@ -3,7 +3,7 @@ data:
   corpus_name: KRLabsOrg/acl-anthology-md
   corpus_config: fulltext
   corpus_split: train
-  max_documents: 1000
+  max_documents: 5000
   local_corpus_dir: ../data/raw/acl-anthology-md
   chunks_path: ../data/processed/chunks.jsonl
   evaluation_name: KRLabsOrg/acl-verbatim-spans
@@ -41,7 +41,7 @@ random:
 retrieval:
   top_k: 10
 experiment:
-  name: acl_validation
+  name: 5000_validation
   output_root: ../experiments
   systems:
     - baseline
