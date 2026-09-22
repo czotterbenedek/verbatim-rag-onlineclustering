@@ -21,6 +21,7 @@ conda activate verbatim-rag-onlineclustering
 python scripts/prepare_data.py --config configs/config.yaml
 python scripts/create_embeddings.py --config configs/config.yaml
 python scripts/run_evaluation.py --config configs/config.yaml
+
 # or provide a readable experiment name
 python scripts/run_evaluation.py --config configs/config.yaml --name k100_validation
 ```
