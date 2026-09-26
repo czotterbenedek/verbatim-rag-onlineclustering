@@ -26,6 +26,37 @@ python scripts/run_evaluation.py --config configs/config.yaml
 python scripts/run_evaluation.py --config configs/config.yaml --name k100_validation
 ```
 
+## End-to-end pipeline
+
+The following diagram shows how source data becomes evaluated retrieval results.
+The baseline, random, offline K-Means, and online K-Means systems all share the
+same final Verbatim-RAG scoring path; clustering only changes how candidate
+chunks are selected before retrieval.
+
+```mermaid
+flowchart TD
+	PREP["Data preparation: load corpus, questions, chunks, and embeddings"]
+	STRATEGIES{"Retrieval strategies"}
+	BASELINE["Full-corpus baseline"]
+	RANDOM["Random candidate selection"]
+	OFFLINE["Offline K-Means"]
+	ONLINE["Online K-Means"]
+	RETRIEVAL["Retrieve with Verbatim-RAG using selected candidates"]
+	EVALUATION["Evaluation: compare results with gold evidence"]
+	OUTPUT["Quality, recall, candidate reduction, latency, overlap, and speed-up"]
+
+	PREP --> STRATEGIES
+	STRATEGIES --> BASELINE
+	STRATEGIES --> RANDOM
+	STRATEGIES --> OFFLINE
+	STRATEGIES --> ONLINE
+	BASELINE --> RETRIEVAL
+	RANDOM --> RETRIEVAL
+	OFFLINE --> RETRIEVAL
+	ONLINE --> RETRIEVAL
+	RETRIEVAL --> EVALUATION --> OUTPUT
+```
+
 `prepare_data.py` downloads the configured ACL corpus and evaluation split,
 chunks documents, and writes `data/processed/chunks.jsonl` and
 `data/processed/evaluation.jsonl`. `create_embeddings.py` writes chunk and
