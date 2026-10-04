@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 from .OnlineKMeans import OnlineKMeans
@@ -30,11 +32,54 @@ class ClusteredRetrievalIndex:
             self.kmeans.fit(self.embeddings)
         else:
             raise ValueError(f"Unsupported clustering algorithm: {algorithm}")
+        self._refresh_assignments()
+
+    def _refresh_assignments(self):
         self.chunk_to_cluster = self.kmeans.predict(self.embeddings)
-        centroid_count = (len(self.kmeans.centroids) if algorithm == "online_kmeans"
-                  else len(self.kmeans.cluster_centers_))
-        self.cluster_to_chunks = {cluster: np.flatnonzero(self.chunk_to_cluster == cluster)
-                      for cluster in range(centroid_count)}
+        centroid_count = (len(self.kmeans.centroids) if self.algorithm == "online_kmeans"
+                          else len(self.kmeans.cluster_centers_))
+        self.cluster_to_chunks = {
+            cluster: np.flatnonzero(self.chunk_to_cluster == cluster)
+            for cluster in range(centroid_count)
+        }
+
+    def append_embeddings(self, embeddings, batch_size=1024):
+        """Add new embeddings and refresh assignments for the visible corpus."""
+        if self.algorithm != "online_kmeans":
+            raise ValueError("Only online_kmeans indexes support incremental updates.")
+        new_embeddings = np.asarray(embeddings, dtype=np.float32)
+        if new_embeddings.ndim != 2 or len(new_embeddings) == 0:
+            raise ValueError("New embeddings must be a non-empty 2D array.")
+        if self.embeddings.ndim == 2 and self.embeddings.shape[1] != new_embeddings.shape[1]:
+            raise ValueError("New embeddings have a different dimension from the index.")
+
+        previous_centroids = None if self.kmeans.centroids is None else self.kmeans.centroids.copy()
+        update_started = time.perf_counter()
+        for start in range(0, len(new_embeddings), batch_size):
+            self.kmeans.partial_fit(new_embeddings[start:start + batch_size])
+        update_latency_ms = (time.perf_counter() - update_started) * 1000
+
+        assignment_started = time.perf_counter()
+        self.embeddings = np.concatenate([self.embeddings, new_embeddings], axis=0)
+        self._refresh_assignments()
+        assignment_latency_ms = (time.perf_counter() - assignment_started) * 1000
+
+        centroid_drift = 0.0
+        if previous_centroids is not None:
+            shared = min(len(previous_centroids), len(self.kmeans.centroids))
+            if shared:
+                centroid_drift = float(np.mean(np.linalg.norm(
+                    self.kmeans.centroids[:shared] - previous_centroids[:shared], axis=1
+                )))
+        return {
+            "update_latency_ms": update_latency_ms,
+            "assignment_latency_ms": assignment_latency_ms,
+            "total_latency_ms": update_latency_ms + assignment_latency_ms,
+            "throughput_chunks_per_second": len(new_embeddings) / max(update_latency_ms / 1000, 1e-12),
+            "centroid_drift_mean": centroid_drift,
+            "num_clusters": int(len(self.kmeans.centroids)),
+            "total_seen": int(self.kmeans.total_seen),
+        }
 
     def predict_top_clusters(self, query_embedding, n_clusters):
         query = np.asarray(query_embedding, dtype=np.float32).reshape(1, -1)

@@ -1,3 +1,5 @@
+experiment_mode: online_growth # Options: static, online_growth
+
 data:
   corpus_source: huggingface
   corpus_name: KRLabsOrg/acl-anthology-md
@@ -29,7 +31,7 @@ clustering:
   random_state: 42
   top_clusters: 10
   dynamic_creation: false
-  max_clusters: 100
+  max_clusters: 200
   new_cluster_threshold: null
   merging: false
   merge_threshold: null
@@ -41,11 +43,21 @@ random:
 retrieval:
   top_k: 10
 experiment:
-  name: 5000_validation
+  name: 00_test
   output_root: ../experiments
   systems:
     - baseline
     - random
+    - offline_kmeans
+    - online_kmeans
+online_growth:
+  stages: [0.1, 0.25, 0.5, 0.75, 1.0]
+  stream_seed: 42
+  order: fixed
+  update_batch_size: 128
+  reassignment: full
+  systems:
+    - baseline
     - offline_kmeans
     - online_kmeans
 results:

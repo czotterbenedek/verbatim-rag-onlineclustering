@@ -27,6 +27,10 @@ def save_run(directory, name, predictions):
     return {"predictions": predictions, "metrics": metrics}
 
 
+def log(message):
+    print(f"[static] {message}", flush=True)
+
+
 def build_experiment_directory(config, requested_name):
     experiment = config.get("experiment", {})
     name = requested_name or experiment.get("name", "experiment")
@@ -43,6 +47,7 @@ def main():
     parser.add_argument("--name", help="Optional experiment name; timestamp is always appended.")
     args = parser.parse_args()
     config = load_config(args.config)
+    log(f"Loading configuration from {args.config}")
     experiment_directory = build_experiment_directory(config, args.name)
     write_config(experiment_directory / "config.yaml", config)
 
@@ -50,6 +55,7 @@ def main():
     chunks = read_jsonl(config_path(config, data["chunks_path"]))
     questions = read_jsonl(config_path(config, data["evaluation_path"]))
     vectors = np.load(config_path(config, embedding["path"]))
+    log(f"Loaded {len(chunks):,} chunks and embeddings {vectors.shape}")
     if vectors.shape[0] != len(chunks):
         raise ValueError(
             f"Embedding/chunk mismatch: {vectors.shape[0]} embeddings for {len(chunks)} chunks. "
@@ -61,15 +67,19 @@ def main():
     retrieval = config["retrieval"]
     clustering = config["clustering"]
     systems = config.get("experiment", {}).get("systems", ["baseline", "online_kmeans"])
+    log(f"Systems: {', '.join(systems)}; output: {experiment_directory}")
     runs = {}
 
     if "baseline" in systems:
+        log("Evaluating baseline retrieval")
         predictions = evaluate(questions, chunks, vectors, query_map, retrieval["top_k"], system_name="baseline")
         runs["baseline"] = save_run(experiment_directory, "baseline", predictions)
+        log("Baseline outputs saved")
 
     indexes = {}
     for system_name, algorithm in (("offline_kmeans", "offline_kmeans"), ("online_kmeans", "online_kmeans")):
         if system_name in systems:
+            log(f"Building {system_name} index")
             indexes[system_name] = ClusteredRetrievalIndex(
                 vectors, clustering["n_clusters"], clustering["metric"],
                 clustering["random_state"], clustering["batch_size"],
@@ -84,8 +94,10 @@ def main():
                 indexes[system_name], clustering["top_clusters"], system_name=system_name,
             )
             runs[system_name] = save_run(experiment_directory, system_name, predictions)
+            log(f"{system_name} outputs saved")
 
     if "random" in systems:
+        log("Evaluating random candidate selection")
         random_config = config.get("random", {})
         target_fraction = random_config.get("candidate_fraction")
         reference = runs.get("online_kmeans", {}).get("predictions", [])
@@ -105,6 +117,7 @@ def main():
             candidate_selector=select_random, system_name="random",
         )
         runs["random"] = save_run(experiment_directory, "random", predictions)
+        log("Random outputs saved")
 
     for system_name, run in runs.items():
         if system_name == "baseline":
@@ -141,6 +154,7 @@ def main():
         )
         (run_directory / "metrics.json").write_text(json.dumps(run["metrics"], indent=2), encoding="utf-8")
 
+    log("Writing plots and metadata")
     create_plots(experiment_directory / "plots", runs)
     metadata = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -155,7 +169,7 @@ def main():
         )),
     }
     (experiment_directory / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-    print(f"Experiment saved to {experiment_directory}")
+    log(f"Experiment saved to {experiment_directory}")
 
 
 if __name__ == "__main__":

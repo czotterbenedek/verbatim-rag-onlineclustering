@@ -13,6 +13,10 @@ For the notebook, start Ollama and use a local model like `llama3.2:3b`.
 
 ## Reproducible pipeline
 
+Set `experiment_mode` at the top of `configs/config.yaml` to choose the
+experiment protocol. The default `static` mode preserves the original
+benchmark. Use `online_growth` for the staged growing-corpus experiment.
+
 The experiment is split into independently runnable stages. All generated data is
 stored under `data/`; evaluation output is stored under `results/`.
 
@@ -24,7 +28,40 @@ python scripts/run_evaluation.py --config configs/config.yaml
 
 # or provide a readable experiment name
 python scripts/run_evaluation.py --config configs/config.yaml --name k100_validation
+
+# run the protocol selected by experiment_mode
+python scripts/run_experiment.py --config configs/config.yaml
 ```
+
+For `experiment_mode: online_growth`, prepare data and embeddings once, then
+run the growth protocol with the same command:
+
+```bash
+python scripts/prepare_data.py --config configs/config.yaml
+python scripts/create_embeddings.py --config configs/config.yaml
+python scripts/run_experiment.py --config configs/config.yaml --name online_growth
+```
+
+The growth runner reveals the precomputed corpus at the configured checkpoints
+(`online_growth.stages`), updates Online K-Means with only newly visible
+embeddings, refreshes assignments for the visible corpus, and evaluates only
+questions whose gold paper is currently available. At each checkpoint it
+compares full-corpus baseline retrieval, an offline K-Means refit trained from
+scratch on the visible corpus, and cumulative Online K-Means. Update timings,
+including offline refit time, are written to `updates.jsonl`; stage predictions
+and metrics are written under `stages/`.
+
+Growth runs also write a `plots/` directory containing longitudinal charts for:
+
+- Hit@10 versus visible corpus size
+- candidate fraction versus visible corpus size
+- retrieval latency versus visible corpus size
+- routing recall versus visible corpus size
+- retrieval speed-up versus the baseline
+- Online K-Means update time versus offline refit time
+- Online K-Means update throughput
+- centroid drift after updates
+- evaluated question coverage
 
 ## End-to-end pipeline
 
