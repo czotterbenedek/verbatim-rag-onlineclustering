@@ -94,6 +94,25 @@ flowchart TD
 	RETRIEVAL --> EVALUATION --> OUTPUT
 ```
 
+The online-growth experiment repeats evaluation as the visible corpus expands:
+
+```mermaid
+flowchart TD
+	PREPARE["Prepare corpus and create all embeddings"]
+	STAGE["Reveal next corpus stage"]
+	UPDATE["Update Online K-Means with new embeddings"]
+	REFIT["Refit offline K-Means for comparison"]
+	EVALUATE["Evaluate baseline, offline, and online retrieval"]
+	OUTPUT["Save metrics, update timings, and plots"]
+
+	PREPARE --> STAGE --> UPDATE
+	STAGE --> REFIT
+	UPDATE --> EVALUATE
+	REFIT --> EVALUATE
+	EVALUATE --> OUTPUT
+	OUTPUT --> STAGE
+```
+
 `prepare_data.py` downloads the configured ACL corpus and evaluation split,
 chunks documents, and writes `data/processed/chunks.jsonl` and
 `data/processed/evaluation.jsonl`. `create_embeddings.py` writes chunk and
