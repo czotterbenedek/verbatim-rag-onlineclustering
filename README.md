@@ -42,6 +42,31 @@ python scripts/create_embeddings.py --config configs/config.yaml
 python scripts/run_experiment.py --config configs/config.yaml --name online_growth
 ```
 
+To compare Online K-Means new-cluster and merge thresholds without running the
+baseline or offline-K-Means systems, use the dedicated grid-search runner:
+
+```bash
+python scripts/grid_search_online_merge.py \
+  --config configs/config.yaml \
+  --new-cluster-thresholds 0.05,0.10,0.20 \
+  --merge-thresholds 0.01,0.02,0.05,0.10 \
+  --output experiments/online_threshold_grid
+```
+
+The script rebuilds a fresh Online K-Means index for every pair of thresholds
+and evaluates it at every configured growth stage. Dynamic cluster creation is
+enabled for these runs, regardless of the value of
+`clustering.dynamic_creation` in the main configuration; `max_clusters` still
+limits the number of clusters. It prints and saves Hit@1,
+Hit@5, Hit@10, routing recall, candidate fraction, retrieval latency, total
+evaluation latency, and Online K-Means update time in `grid_results.csv` and
+`grid_results.json`. It also creates a `plots/` directory with stage-by-stage
+plots for Hit@10, routing recall, retrieval latency, update time, and cluster
+count, plus a final-stage comparison of those metrics for every threshold pair.
+Thresholds use cosine-distance semantics: larger `new_cluster_threshold`
+values create fewer new clusters, while larger `merge_threshold` values merge
+more nearby clusters. Splitting must remain disabled for this search.
+
 The growth runner reveals the precomputed corpus at the configured checkpoints
 (`online_growth.stages`), updates Online K-Means with only newly visible
 embeddings, refreshes assignments for the visible corpus, and evaluates only
@@ -185,10 +210,6 @@ overlap, meaningful candidate reduction, and speed-up. `routing_recall` should
 be checked before `gold_hit_at_10`: low routing recall means the cluster router
 discarded the evidence, while high routing recall with lower Hit@10 points to a
 downstream Verbatim-RAG retrieval issue.
-
-
-
-
 
 
 

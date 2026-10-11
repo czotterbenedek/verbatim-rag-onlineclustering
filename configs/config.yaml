@@ -33,7 +33,7 @@ clustering:
   dynamic_creation: false
   max_clusters: 500
   new_cluster_threshold: null
-  merging: false
+  merging: true
   merge_threshold: null
   splitting: false
   split_conductance_threshold: null
