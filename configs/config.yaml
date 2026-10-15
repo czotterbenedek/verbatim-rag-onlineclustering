@@ -32,9 +32,9 @@ clustering:
   top_clusters: 10
   dynamic_creation: false
   max_clusters: 500
-  new_cluster_threshold: null
+  new_cluster_threshold: 0.2
   merging: true
-  merge_threshold: null
+  merge_threshold: 0.1
   splitting: false
   split_conductance_threshold: null
 random:

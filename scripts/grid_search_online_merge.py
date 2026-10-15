@@ -47,6 +47,61 @@ def save_rows(path, rows):
         writer.writerows(rows)
 
 
+OBJECTIVE_DIRECTIONS = {
+    "gold_hit_at_10": "maximize",
+    "routing_hit": "maximize",
+    "candidate_fraction": "minimize",
+    "latency_ms": "minimize",
+    "retrieval_latency_ms": "minimize",
+    "update_total_latency_ms": "minimize",
+    "num_clusters": "minimize",
+}
+
+
+def select_best_params(rows, objective):
+    """Select the best threshold pair from the final growth stage."""
+    final_stage = max(row["stage"] for row in rows)
+    candidates = [
+        row for row in rows
+        if row["stage"] == final_stage and row[objective] is not None
+    ]
+    if not candidates:
+        raise ValueError(
+            f"No rows with a value for objective {objective!r} at the final stage."
+        )
+
+    maximize = OBJECTIVE_DIRECTIONS[objective] == "maximize"
+
+    def sort_key(row):
+        objective_value = row[objective]
+        primary = -objective_value if maximize else objective_value
+        return (
+            primary,
+            -row["gold_hit_at_10"] if row["gold_hit_at_10"] is not None else float("inf"),
+            row["latency_ms"] if row["latency_ms"] is not None else float("inf"),
+            row["update_total_latency_ms"]
+            if row["update_total_latency_ms"] is not None
+            else float("inf"),
+            row["new_cluster_threshold"],
+            row["merge_threshold"],
+        )
+
+    best = min(candidates, key=sort_key)
+    return {
+        "objective": objective,
+        "direction": OBJECTIVE_DIRECTIONS[objective],
+        "stage": best["stage"],
+        "num_chunks": best["num_chunks"],
+        "new_cluster_threshold": best["new_cluster_threshold"],
+        "merge_threshold": best["merge_threshold"],
+        "metrics": {
+            key: value
+            for key, value in best.items()
+            if key not in {"new_cluster_threshold", "merge_threshold"}
+        },
+    }
+
+
 def create_grid_plots(output_directory, rows):
     import matplotlib.pyplot as plt
 
@@ -314,6 +369,15 @@ def main():
         help="Comma-separated cosine-distance thresholds in [0, 1].",
     )
     parser.add_argument(
+        "--objective",
+        choices=tuple(OBJECTIVE_DIRECTIONS),
+        default="gold_hit_at_10",
+        help=(
+            "Metric used to select the best threshold pair at the final growth "
+            "stage. Quality metrics are maximized and cost metrics minimized."
+        ),
+    )
+    parser.add_argument(
         "--output",
         help="Output directory. Defaults to experiments/<name>_<timestamp>.",
     )
@@ -376,14 +440,26 @@ def main():
             - reference_row["update_total_latency_ms"]
         )
 
+    best_params = select_best_params(all_rows, args.objective)
     save_rows(output / "grid_results.csv", all_rows)
     (output / "grid_results.json").write_text(
         json.dumps(all_rows, indent=2), encoding="utf-8"
+    )
+    (output / "best_params.json").write_text(
+        json.dumps(best_params, indent=2), encoding="utf-8"
     )
     (output / "config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
     create_grid_plots(output / "plots", all_rows)
     print(f"\nResults saved to {output}")
     print(f"Plots saved to {output / 'plots'}")
+    print(
+        "\nBest parameters "
+        f"(objective={best_params['objective']}, "
+        f"stage={best_params['stage']}): "
+        f"new_cluster_threshold={best_params['new_cluster_threshold']:.4f}, "
+        f"merge_threshold={best_params['merge_threshold']:.4f}, "
+        f"value={best_params['metrics'][args.objective]:.4f}"
+    )
     print_table(all_rows)
 
 
