@@ -5,7 +5,7 @@ data:
   corpus_name: KRLabsOrg/acl-anthology-md
   corpus_config: fulltext
   corpus_split: train
-  max_documents: 12000 # Set to null to use all documents
+  max_documents: 35000 # Set to null to use all documents
   local_corpus_dir: ../data/raw/acl-anthology-md
   chunks_path: ../data/processed/chunks.jsonl
   evaluation_name: KRLabsOrg/acl-verbatim-spans
@@ -31,7 +31,7 @@ clustering:
   random_state: 42
   top_clusters: 10
   dynamic_creation: false
-  max_clusters: 500
+  max_clusters: 1000
   new_cluster_threshold: 0.2
   merging: true
   merge_threshold: 0.1
@@ -43,7 +43,7 @@ random:
 retrieval:
   top_k: 10
 experiment:
-  name: 00_test
+  name: 35k_docs_test
   output_root: ../experiments
   systems:
     - baseline
