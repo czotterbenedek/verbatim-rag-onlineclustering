@@ -164,39 +164,39 @@ flowchart TD
 	OUTPUT --> STAGE
 ```
 
-	The full-chat experiment extends the same retrieval comparison with answer
-	generation. It uses the same Ollama model for every system so the
-	full-pipeline latency comparison includes generation cost while measuring the
-	effect of candidate selection:
+The full-chat experiment extends the same retrieval comparison with answer
+generation. It uses the same Ollama model for every system so the
+full-pipeline latency comparison includes generation cost while measuring the
+effect of candidate selection:
 
-	```mermaid
-	flowchart TD
-		PREPARE["Reuse prepared chunks, embeddings, and evaluation questions"]
-		SCOPE["Select up to full_chat.max_questions unique questions"]
-		STRATEGIES{"Retrieval strategies"}
-		BASELINE["Full-corpus baseline"]
-		RANDOM["Random candidate selection"]
-		OFFLINE["Offline K-Means"]
-		ONLINE["Online K-Means"]
-		RETRIEVAL["Verbatim-RAG retrieval"]
-		CONTEXT["Build context from retrieved chunks"]
-		GENERATION["Generate answer with local Ollama model"]
-		MEASURE["Measure retrieval, generation, and full-pipeline latency"]
-		OUTPUT["Save chat predictions and chat metrics per system"]
+```mermaid
+flowchart TD
+    PREPARE["Reuse prepared chunks, embeddings, and evaluation questions"]
+    SCOPE["Select up to configured question limit"]
+    STRATEGIES{"Retrieval strategies"}
+    BASELINE["Full-corpus baseline"]
+    RANDOM["Random candidate selection"]
+    OFFLINE["Offline K-Means"]
+    ONLINE["Online K-Means"]
+    RETRIEVAL["Verbatim-RAG retrieval"]
+    CONTEXT["Build context from retrieved chunks"]
+    GENERATION["Generate answer with local Ollama model"]
+    MEASURE["Measure retrieval, generation, and full-pipeline latency"]
+    OUTPUT["Save chat predictions and chat metrics per system"]
 
-		PREPARE --> SCOPE --> STRATEGIES
-		STRATEGIES --> BASELINE
-		STRATEGIES --> RANDOM
-		STRATEGIES --> OFFLINE
-		STRATEGIES --> ONLINE
-		BASELINE --> RETRIEVAL
-		RANDOM --> RETRIEVAL
-		OFFLINE --> RETRIEVAL
-		ONLINE --> RETRIEVAL
-		RETRIEVAL --> CONTEXT --> GENERATION --> MEASURE --> OUTPUT
-	```
+    PREPARE --> SCOPE --> STRATEGIES
+    STRATEGIES --> BASELINE
+    STRATEGIES --> RANDOM
+    STRATEGIES --> OFFLINE
+    STRATEGIES --> ONLINE
+    BASELINE --> RETRIEVAL
+    RANDOM --> RETRIEVAL
+    OFFLINE --> RETRIEVAL
+    ONLINE --> RETRIEVAL
+    RETRIEVAL --> CONTEXT --> GENERATION --> MEASURE --> OUTPUT
+```
 
-	`prepare_data.py` downloads the configured ACL corpus and evaluation split,
+`prepare_data.py` downloads the configured ACL corpus and evaluation split,
 chunks documents, and writes `data/processed/chunks.jsonl` and
 `data/processed/evaluation.jsonl`. `create_embeddings.py` writes chunk and
 query vectors under `data/embeddings/`. The evaluation runner first executes
@@ -268,7 +268,6 @@ overlap, meaningful candidate reduction, and speed-up. `routing_recall` should
 be checked before `gold_hit_at_10`: low routing recall means the cluster router
 discarded the evidence, while high routing recall with lower Hit@10 points to a
 downstream Verbatim-RAG retrieval issue.
-
 
 
 
