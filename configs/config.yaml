@@ -1,4 +1,4 @@
-experiment_mode: online_growth # Options: static, online_growth
+experiment_mode: full_chat # Options: static, online_growth, full_chat
 
 data:
   corpus_source: huggingface
@@ -62,3 +62,11 @@ online_growth:
     - online_kmeans
 results:
   directory: ../results/default
+full_chat:
+  model: llama3.2:3b
+  endpoint: http://localhost:11434/api/generate
+  timeout_seconds: 120
+  max_questions: 15
+  system_prompt: >-
+    Answer the question using only the retrieved context. Be concise and say
+    when the context is insufficient.

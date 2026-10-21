@@ -16,6 +16,8 @@ For the notebook, start Ollama and use a local model like `llama3.2:3b`.
 Set `experiment_mode` at the top of `configs/config.yaml` to choose the
 experiment protocol. The default `static` mode preserves the original
 benchmark. Use `online_growth` for the staged growing-corpus experiment.
+The `full_chat` protocol is opt-in and leaves the existing retrieval
+experiments unchanged.
 
 The experiment is split into independently runnable stages. All generated data is
 stored under `data/`; evaluation output is stored under `results/`.
@@ -32,6 +34,30 @@ python scripts/run_evaluation.py --config configs/config.yaml --name k100_valida
 # run the protocol selected by experiment_mode
 python scripts/run_experiment.py --config configs/config.yaml
 ```
+
+To benchmark the complete retrieval-plus-generation path, start Ollama with
+the configured model (the default is `llama3.2:3b`) and run:
+
+```bash
+ollama serve
+ollama pull llama3.2:3b
+python scripts/run_experiment.py --config configs/config.yaml \
+  --mode full_chat --name full_chat
+```
+
+`full_chat` evaluates the configured baseline, random, offline-K-Means, and
+online-K-Means systems, then sends each system's retrieved context to Ollama.
+It evaluates 100 unique questions by default because generation dominates the
+runtime; use `--max-questions N` to change that scope, or set
+`full_chat.max_questions` in the config. Each experiment directory contains
+`chat_predictions.jsonl` and `chat_metrics.json` per system. The metrics
+report generation latency, full pipeline latency, retrieval latency, and
+speed-up against the baseline. Since the same generator is used for every
+system, the full-pipeline speed-up shows whether retrieval clustering matters
+after generation overhead is included. The experiment also writes
+`plots/full_pipeline_latency_by_system.png`, a stacked bar chart of average
+retrieval and generation latency with the measured average full-pipeline time
+annotated for each system.
 
 For `experiment_mode: online_growth`, prepare data and embeddings once, then
 run the growth protocol with the same command:
@@ -138,7 +164,39 @@ flowchart TD
 	OUTPUT --> STAGE
 ```
 
-`prepare_data.py` downloads the configured ACL corpus and evaluation split,
+	The full-chat experiment extends the same retrieval comparison with answer
+	generation. It uses the same Ollama model for every system so the
+	full-pipeline latency comparison includes generation cost while measuring the
+	effect of candidate selection:
+
+	```mermaid
+	flowchart TD
+		PREPARE["Reuse prepared chunks, embeddings, and evaluation questions"]
+		SCOPE["Select up to full_chat.max_questions unique questions"]
+		STRATEGIES{"Retrieval strategies"}
+		BASELINE["Full-corpus baseline"]
+		RANDOM["Random candidate selection"]
+		OFFLINE["Offline K-Means"]
+		ONLINE["Online K-Means"]
+		RETRIEVAL["Verbatim-RAG retrieval"]
+		CONTEXT["Build context from retrieved chunks"]
+		GENERATION["Generate answer with local Ollama model"]
+		MEASURE["Measure retrieval, generation, and full-pipeline latency"]
+		OUTPUT["Save chat predictions and chat metrics per system"]
+
+		PREPARE --> SCOPE --> STRATEGIES
+		STRATEGIES --> BASELINE
+		STRATEGIES --> RANDOM
+		STRATEGIES --> OFFLINE
+		STRATEGIES --> ONLINE
+		BASELINE --> RETRIEVAL
+		RANDOM --> RETRIEVAL
+		OFFLINE --> RETRIEVAL
+		ONLINE --> RETRIEVAL
+		RETRIEVAL --> CONTEXT --> GENERATION --> MEASURE --> OUTPUT
+	```
+
+	`prepare_data.py` downloads the configured ACL corpus and evaluation split,
 chunks documents, and writes `data/processed/chunks.jsonl` and
 `data/processed/evaluation.jsonl`. `create_embeddings.py` writes chunk and
 query vectors under `data/embeddings/`. The evaluation runner first executes
@@ -210,9 +268,6 @@ overlap, meaningful candidate reduction, and speed-up. `routing_recall` should
 be checked before `gold_hit_at_10`: low routing recall means the cluster router
 discarded the evidence, while high routing recall with lower Hit@10 points to a
 downstream Verbatim-RAG retrieval issue.
-
-
-
 
 
 
