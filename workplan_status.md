@@ -20,16 +20,12 @@
 
 ## Still to do
 
-- Run final held-out test evaluation
-- Keep test data separate from tuning
-- Run full-corpus evaluation
-- Add random-routing growth comparison
-- Test different cluster counts
-- Test different routing values
-- Compare dynamic-clustering variants
-- Add baseline-overlap analysis
-- Add missing latency percentiles
-- Add automated tests
-- Perform failure analysis
-- Document final results and limitations
-- Complete the project report
+- Run the complete final experiment set on the selected datasets and
+  configurations.
+- Consolidate the experiment outputs and select the results used in the report.
+- Write the project documentation.
+- Describe the implemented methods and system architecture.
+- Describe the experimental setup and evaluation methodology.
+- Present and interpret the results and comparison with the baseline.
+- Document the limitations and conclusions.
+- Complete the final project report and prepare the presentation material.
