@@ -25,13 +25,13 @@ embedding:
   query_path: ../data/embeddings/query_embeddings.npy
 clustering:
   algorithm: online_kmeans
-  n_clusters: 100
+  n_clusters: 460
   metric: cosine
   batch_size: 128
   random_state: 42
   top_clusters: 10
   dynamic_creation: false
-  max_clusters: 1000
+  max_clusters: 2000
   new_cluster_threshold: 0.2
   merging: true
   merge_threshold: 0.1

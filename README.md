@@ -93,6 +93,22 @@ Thresholds use cosine-distance semantics: larger `new_cluster_threshold`
 values create fewer new clusters, while larger `merge_threshold` values merge
 more nearby clusters. Splitting must remain disabled for this search.
 
+To select the K-Means cluster count, run the separate elbow search:
+
+```bash
+python scripts/grid_search_k.py \
+  --config configs/config.yaml \
+  --k-values 10,25,50,75,100,150,200,300
+```
+
+The script fits each requested `k`, writes `elbow_results.csv` and
+`elbow_results.json`, and creates `plots/elbow_plot.png`. By default, results
+are written to a timestamped directory under `experiments/`. Choose the value
+of `k` at the
+visible bend in the objective curve, then update `clustering.n_clusters` in
+`configs/config.yaml`. The default sweep uses offline K-Means; use
+`--algorithm online_kmeans` to inspect the online implementation instead.
+
 The growth runner reveals the precomputed corpus at the configured checkpoints
 (`online_growth.stages`), updates Online K-Means with only newly visible
 embeddings, refreshes assignments for the visible corpus, and evaluates only
@@ -268,8 +284,6 @@ overlap, meaningful candidate reduction, and speed-up. `routing_recall` should
 be checked before `gold_hit_at_10`: low routing recall means the cluster router
 discarded the evidence, while high routing recall with lower Hit@10 points to a
 downstream Verbatim-RAG retrieval issue.
-
-
 
 
 
