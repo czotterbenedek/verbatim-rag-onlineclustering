@@ -1,11 +1,11 @@
-experiment_mode: full_chat # Options: static, online_growth, full_chat
+experiment_mode: online_growth # Options: static, online_growth, full_chat
 
 data:
   corpus_source: huggingface
   corpus_name: KRLabsOrg/acl-anthology-md
   corpus_config: fulltext
   corpus_split: train
-  max_documents: 35000 # Set to null to use all documents
+  max_documents: 20000 # Set to null to use all documents
   local_corpus_dir: ../data/raw/acl-anthology-md
   chunks_path: ../data/processed/chunks.jsonl
   evaluation_name: KRLabsOrg/acl-verbatim-spans

@@ -17,6 +17,7 @@
 - Latency and update-cost measurements
 - Growth and scalability plots
 - Machine-readable experiment results
+- Finetune k parameter for KMeans
 
 ## Still to do
 
