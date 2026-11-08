@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 import numpy as np
+from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -12,7 +14,7 @@ from src.cluster_index import ClusteredRetrievalIndex
 from src.config import config_path, load_config, write_config
 from src.data_pipeline import read_jsonl
 from src.evaluation import evaluate
-from src.generation import OllamaGenerator
+from src.generation import GeminiGenerator, OllamaGenerator
 from scripts.run_evaluation import build_experiment_directory
 
 
@@ -229,12 +231,34 @@ def main():
         )
         log(f"random: retrieval evaluation complete ({len(retrieval_runs['random'])} questions)")
 
-    generator = OllamaGenerator(
-        full_chat.get("model", "llama3.2:3b"),
-        full_chat.get("endpoint", "http://localhost:11434/api/generate"),
-        full_chat.get("timeout_seconds", 120),
-    )
-    log(f"generation model: {generator.model}; endpoint: {generator.endpoint}")
+    load_dotenv()
+    provider = full_chat.get("provider", "ollama").lower()
+    if provider == "ollama":
+        generator = OllamaGenerator(
+            full_chat.get("model", "llama3.2:3b"),
+            full_chat.get("endpoint", "http://localhost:11434/api/generate"),
+            full_chat.get("timeout_seconds", 120),
+        )
+    elif provider == "gemini":
+        api_key_env = full_chat.get("api_key_env", "GEMINI_API_KEY")
+        api_key = os.getenv(api_key_env)
+        if not api_key:
+            raise RuntimeError(
+                f"Gemini provider selected, but environment variable {api_key_env} "
+                "is not set. Copy .env.example to .env and add your API key."
+            )
+        generator = GeminiGenerator(
+            full_chat.get("gemini_model", "gemini-3.8-flash"),
+            api_key,
+            full_chat.get("gemini_endpoint"),
+            full_chat.get("timeout_seconds", 120),
+        )
+    else:
+        raise ValueError(
+            f"Unsupported full_chat.provider '{provider}'. "
+            "Expected 'ollama' or 'gemini'."
+        )
+    log(f"generation provider: {provider}; model: {generator.model}")
     chunks_by_id = {chunk["chunk_id"]: chunk for chunk in chunks}
     system_prompt = full_chat.get(
         "system_prompt",

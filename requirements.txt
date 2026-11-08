@@ -16,3 +16,4 @@ accelerate
 pyarrow
 faiss-cpu
 pyyaml
+python-dotenv

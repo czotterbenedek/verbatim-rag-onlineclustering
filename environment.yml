@@ -20,6 +20,7 @@ dependencies:
   - pyarrow
   - faiss-cpu
   - pyyaml
+  - python-dotenv
   - pip
   - pip:
       - verbatim-rag

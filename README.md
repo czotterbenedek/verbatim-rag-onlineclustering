@@ -10,6 +10,10 @@ conda activate verbatim-rag-onlineclustering
 ```
 
 For the notebook, start Ollama and use a local model like `llama3.2:3b`.
+The full-chat experiment can also use Gemini. Copy `.env.example` to `.env`,
+set `GEMINI_API_KEY`, and set `full_chat.provider` to `gemini` in
+`configs/config.yaml`. The API key is read from the environment and is never
+stored in the experiment configuration.
 
 ## Reproducible pipeline
 
@@ -46,7 +50,11 @@ python scripts/run_experiment.py --config configs/config.yaml \
 ```
 
 `full_chat` evaluates the configured baseline, random, offline-K-Means, and
-online-K-Means systems, then sends each system's retrieved context to Ollama.
+online-K-Means systems, then sends each system's retrieved context to the
+configured Ollama or Gemini generator. Set `full_chat.provider` to `ollama` or
+`gemini`; Ollama uses `full_chat.model` and `full_chat.endpoint`, while Gemini
+uses `full_chat.gemini_model`, `full_chat.gemini_endpoint`, and the environment
+variable named by `full_chat.api_key_env`.
 It evaluates 100 unique questions by default because generation dominates the
 runtime; use `--max-questions N` to change that scope, or set
 `full_chat.max_questions` in the config. Each experiment directory contains
@@ -284,7 +292,6 @@ overlap, meaningful candidate reduction, and speed-up. `routing_recall` should
 be checked before `gold_hit_at_10`: low routing recall means the cluster router
 discarded the evidence, while high routing recall with lower Hit@10 points to a
 downstream Verbatim-RAG retrieval issue.
-
 
 
 
